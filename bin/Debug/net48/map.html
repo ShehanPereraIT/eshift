@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Pick Location</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+        /* Basic styling to ensure the map fills the container */
+        #map {
+            height: 100%;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjrH9dZQq0VJ-NhstQ8OBhLCFaJdkBtlI&callback=initMap&libraries=places"></script>
+
+    <script>
+        let map; // Declare map globally
+
+        /**
+         * Initializes the Google Map.
+         * This function is called by the Google Maps API after it loads.
+         */
+        function initMap() {
+            const center = { lat: 7.8731, lng: 80.7718 }; // Center of Sri Lanka
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: center,
+                zoom: 7 // Zoom level
+            });
+
+            // Add a click listener to the map to place markers
+            map.addListener("click", (e) => {
+                placeMarkerAndGeocode(e.latLng);
+            });
+        }
+
+        /**
+         * Places a marker on the map and performs reverse geocoding to get an address.
+         * @param {google.maps.LatLng} latLng - The latitude and longitude of the click.
+         */
+        function placeMarkerAndGeocode(latLng) {
+            // Clear existing markers (optional, but good for single-selection)
+            if (map.marker) {
+                map.marker.setMap(null);
+            }
+
+            const geocoder = new google.maps.Geocoder();
+
+            // Create a new marker at the clicked location
+            const marker = new google.maps.Marker({
+                position: latLng,
+                map: map
+            });
+            map.marker = marker; // Store the marker reference if you want to clear it later
+
+            // Perform reverse geocoding
+            geocoder.geocode({ location: latLng }, (results, status) => {
+                if (status === "OK") {
+                    if (results[0]) {
+                        // Call the C# host method to set the selected address
+                        // window.external.SetAddress is specific to System.Windows.Forms.WebBrowser
+                        if (window.external && typeof window.external.SetAddress === 'function') {
+                            window.external.SetAddress(results[0].formatted_address);
+                        } else {
+                            // Fallback if running outside the C# WebBrowser context
+                            console.warn("window.external.SetAddress not available. Address: " + results[0].formatted_address);
+                            alert("Selected Address: " + results[0].formatted_address);
+                        }
+                    } else {
+                        alert("No address found for this location.");
+                    }
+                } else {
+                    alert("Geocoder failed due to: " + status + "\nCheck your API key and network connection.");
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div id="map"></div>
+</body>
+</html>
